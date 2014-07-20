@@ -1,22 +1,22 @@
 BioTools
 ========
 
-Python tools for computational biology and bioinformatics research.
+Python tools for computational biology and bioinformatics research. the project currently consists of the following modules:
 
-affy-py
+affy
 Tools for processing Affymetrix microarray data
 
-cvsim-py
+cvsim
 Simulation of the cardiovascular system
 
-geo-py
+geo
 Tools for extracting data from the Gene Expresion Omnibus (GEO) database
 
-neurosim-py
+neurosim
 Simulation of a group of neurons
 
-omim-py
+omim
 Tools for extracting data from the Online Mendelian Inheritance in Man (OMIM) database
 
-uniprot-py
+uniprot
 Tools for extracting data from the UniProt database
