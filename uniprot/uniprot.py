@@ -92,7 +92,7 @@ def _fetch(baseurl, dataset, id = "", format = "", **keywords):
         if id == "":
             raise ValueError("id must be defined when format is defined.")
         #Append dot to format
-        format = "%s." % format
+        format = ".%s" % format
         
     #Build the url and generate HTTP request
     data = urllib.urlencode(keywords)
