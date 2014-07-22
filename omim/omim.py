@@ -13,8 +13,21 @@ Unless required by applicable law or agreed to in writing, software distributed 
 For information about using the OMIM API and a description of keywords, please visit the following web page:
 http://www.omim.org/help/api
 
-To use the API you must include your API key with every request. If you do not
+To use the functions in this module, include the OMIM API keywords as input parameters.
+
+IMPORTANT: To use the API you must include your API key with every request. If you do not
 already have an API key then you can register for one by visiting http://www.omim.org/api.
+
+For example if your API key is XXXXXXXXXX then you would include it as one of your
+function parameters and can query OMIM entry number 141900 by specifying:
+>> response = omim.entry(mimNumber="141900", apiKey="XXXXXXXXXX")
+
+Note that each function returns results as a file-handle like object which you can either
+iterate over:
+>> for line in response:
+>>     print line
+or you can read at once.
+>> results = response.read()
 
 Variables:
 US_API_HOST          The subdomain of the United States API host
@@ -28,53 +41,49 @@ searchGeneMap        Searches the OMIM gene map
 allelicVariantList   Retrieves a list of allelic variants associated with the MIM number
 referenceList        Retrieves a list of references associated with the MIM number
 _fetch               Internal function used to send the HTTP request to OMIM and return a response
-_requireParameter    Internal function to check if a required parameter is included in the keywords
 """
 
 import time
 import urllib
 import urllib2
-import warnings
 
 #There are two API hosts available, one located in the United States:
 US_API_HOST = "http://api.omim.org"
 #and the other located in Europe:
 EU_API_HOST = "http://api.europe.omim.org"
-#By default apiHost is set to US_API_HOST, but you should change it to EU_API_HOST if that server is closer.
+#By default apiHost is set to US_API_HOST, but change it to EU_API_HOST if that server is closer.
 apiHost = US_API_HOST
 
-def entry(**keywords):
-    """Fetches OMIM entry results which are returned as a file handle-like object. 
+def entry(mimNumber, **keywords):
+    """Fetches OMIM entry results which are returned as a file handle-like object.
     
-    'mimNumber' is required to be among the keywords.
+    'mimNumber' is required to be among the parameters.
     
     See the online documentation for an explanation of parameters:
     http://www.omim.org/help/api
     """
-    _requireParameter("mimNumber", keywords)
-        
+    keywords["mimNumber"] = mimNumber
     handler = "entry"
     response = _fetch(apiHost, handler, **keywords)
     return response
 
-def clinicalSynopsis(**keywords):
+def clinicalSynopsis(mimNumber, **keywords):
     """Fetches OMIM clinical synopsis results which are returned as a file handle-like object.
     
-    'mimNumber' is required to be among the keywords.
+    'mimNumber' is required to be among the parameters.
     
     See the online documentation for an explanation of parameters:
     http://www.omim.org/help/api
     """
-    _requireParameter("mimNumber", keywords)
-    
+    keywords["mimNumber"] = mimNumber
     handler = "clinicalSynopsis"
     response = _fetch(apiHost, handler, **keywords)
     return response
 
-def search(handler = "entry", **keywords):
+def search(search, handler = "entry", **keywords):
     """Fetches OMIM search results which are returned as a file handle-like object.
     
-    'search' is required to be among the keywords.
+    'search' is required to be among the parameters.
     
     handler - the handler refers to the data object to search for. By default handler is set to
     'entry', but other possible values are 'geneMap' and 'clinicalSynopsis'.
@@ -82,8 +91,7 @@ def search(handler = "entry", **keywords):
     See the online documentation for an explanation of parameters:
     http://www.omim.org/help/api
     """
-    _requireParameter("search", keywords)
-    
+    keywords["search"] = search
     handler = "search/" + handler
     response = _fetch(apiHost, handler, **keywords)
     return response
@@ -100,21 +108,20 @@ def geneMap(**keywords):
     response = _fetch(apiHost, handler, **keywords)
     return response
 
-def allelicVariantList(**keywords):
+def allelicVariantList(mimNumber, **keywords):
     """Fetches OMIM allelic variant list for particular MIM entries which is returned as a file handle-like object. 
     
-    'mimNumber' is required to be among the keywords.
+    'mimNumber' is required to be among the parameters.
     
     See the online documentation for an explanation of parameters:
     http://www.omim.org/help/api
     """
-    _requireParameter("mimNumber", keywords)
-    
+    keywords["mimNumber"] = mimNumber
     handler = "entry/allelicVariantList"
     response = _fetch(apiHost, handler, **keywords)
     return response
 
-def referenceList(**keywords):
+def referenceList(mimNumber, **keywords):
     """Fetches OMIM reference list for particular MIM entries which is returned as a file handle-like object.
     
     'mimNumber' is required to be among the keywords.
@@ -122,13 +129,12 @@ def referenceList(**keywords):
     See the online documentation for an explanation of parameters:
     http://www.omim.org/help/api
     """
-    _requireParameter("mimNumber", keywords)
-    
+    keywords["mimNumber"] = mimNumber
     handler = "entry/referenceList"
     response = _fetch(apiHost, handler, **keywords)
     return response
 
-def _fetch(domain, handler, **params):
+def _fetch(baseurl, handler, **keywords):
     """Helper function to build the URL and open a handle to it.
      
     Opens a handle to OMIM using the URL path and parameters.
@@ -144,30 +150,13 @@ def _fetch(domain, handler, **params):
         time.sleep(wait)
         _fetch.previous = current + wait 
     else:
-        _fetch.previous = current 
-    #Make sure API key is defined   
-    _requireParameter("apiKey", params,
-        """
-        API key is not specified. OMIM requires you to include it with every request.
-        If you do not have an API key, then visit http://www.omim.org/api to register for one.
-        """)
+        _fetch.previous = current
     #Build the url and generate HTTP request
-    query = urllib.urlencode(params)
-    url = "%s/api/%s/?%s" % (domain, handler, query)
-    req = urllib2.Request(url)
+    query = urllib.urlencode(keywords)
+    url = "%s/api/%s/?%s" % (baseurl, handler, query)
+    request = urllib2.Request(url)
     # Return response as file-like object
-    response = urllib2.urlopen(req)
+    response = urllib2.urlopen(request)
     return response
     
 _fetch.previous = 0
-
-def _requireParameter(parameter, _dict, message = None):
-    """ Helper function that checks if a given parameter is in the dictionary.
-    A warning is given if the key cannot be found.
-    """
-    try:
-        _dict[parameter]
-    except KeyError:
-        if message == None:
-            message = "Required parameter '%s' is not specified" % parameter
-        warnings.warn(message, UserWarning)
