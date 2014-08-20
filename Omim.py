@@ -20,19 +20,23 @@ already have an API key then you can register for one by visiting http://www.omi
 
 For example if your API key is XXXXXXXXXX then you would include it as one of your
 function parameters and can query OMIM entry number 141900 by specifying:
->> response = omim.entry(mimNumber="141900", apiKey="XXXXXXXXXX")
+>> response = Omim.entry(mimNumber="141900", apiKey="XXXXXXXXXX")
 
-Note that each function returns results as a file-handle like object which you can either
-iterate over:
+You can also add your API key as a variable to avoid having to add it with every request:
+>> Omim.apiKey = "XXXXXXXXXX"
+>> response = Omim.entry(mimNumber="141900")
+
+Each function returns results as a file-handle like object which you can iterate over:
 >> for line in response:
 >>     print line
-or you can read at once.
+or read into a string:
 >> results = response.read()
 
 Variables:
-US_API_HOST          The subdomain of the United States API host
-EU_API_HOST          The subdomain of the Europe API host
-apiHost              The name of the API host to use, which determines whether to use US_API_HOST or EU_API_HOST
+US_API_HOST          Subdomain of the United States API host
+EU_API_HOST          Subdomain of the Europe API host
+apiHost              Name of the API host to use, which is US_API_HOST by default
+apiKey               Convenience variable to store API key so that y added to every request
 
 Functions:
 entry                Retrieves records in the requested format by MIM number
@@ -53,6 +57,8 @@ US_API_HOST = "http://api.omim.org"
 EU_API_HOST = "http://api.europe.omim.org"
 #By default apiHost is set to US_API_HOST, but change it to EU_API_HOST if that server is closer.
 apiHost = US_API_HOST
+#Use this variable to store your API key to avoid having to add it to every request
+apiKey = None
 
 def entry(mimNumber, **keywords):
     """Fetches OMIM entry results which are returned as a file handle-like object.
@@ -151,6 +157,9 @@ def _fetch(baseurl, handler, **keywords):
         _fetch.previous = current + wait 
     else:
         _fetch.previous = current
+    #Add API key if it is defined as variable and not in keywords
+    if apiKey != None and "apikey" not in (key.lower() for key in keywords):
+        keywords["apiKey"] = apiKey
     #Build the url and generate HTTP request
     query = urllib.urlencode(keywords)
     url = "%s/api/%s/?%s" % (baseurl, handler, query)
